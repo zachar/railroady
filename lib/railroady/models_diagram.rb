@@ -20,7 +20,7 @@ class ModelsDiagram < AppDiagram
     STDERR.puts "Generating models diagram" if @options.verbose
     get_files.each do |f|
       begin
-        process_class extract_class_name(f).constantize
+        process_class extract_class_name(f).gsub("App::Models::","").gsub("Models::","").constantize
       rescue Exception
         STDERR.puts "Warning: exception #{$!} raised while trying to load model class #{f}"
       end
@@ -29,7 +29,13 @@ class ModelsDiagram < AppDiagram
   end
 
   def get_files(prefix ='')
-    files = !@options.specify.empty? ? Dir.glob(@options.specify) : Dir.glob(prefix << "app/models/**/*.rb")
+    if !@options.specify.empty?
+      files = Dir.glob(@options.specify)
+    else
+      files  = Dir.glob(prefix << "app/models/**/*.rb")
+      files += Dir.glob("components/*/app/models/**/*.rb")
+      files += Dir.glob("auth/app/models/**/*.rb")
+    end
     files += Dir.glob("vendor/plugins/**/app/models/*.rb") if @options.plugins_models
     files -= Dir.glob(@options.exclude)
     files
@@ -68,17 +74,20 @@ class ModelsDiagram < AppDiagram
   end
 
   def process_basic_class(current_class)
+    STDERR.puts "Processing #{current_class} : BASIC CLASS"
     node_type = @options.brief ? 'class-brief' : 'class'
     @graph.add_node [node_type, current_class.name]
     true
   end
 
   def process_basic_module(current_class)
+    STDERR.puts "Processing #{current_class} : BASIC MOD"
     @graph.add_node ['module', current_class.name]
     false
   end
 
   def process_active_record_model(current_class)
+    STDERR.puts "Processing #{current_class} : AR"
     node_attribs = []
     if @options.brief || current_class.abstract_class?
       node_type = 'model-brief'

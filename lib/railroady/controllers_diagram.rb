@@ -21,12 +21,12 @@ class ControllersDiagram < AppDiagram
 
   # Process controller files
   def generate
-    STDERR.print "Generating controllers diagram\n" if @options.verbose
+    STDERR.print "Generating controllers diagram\n" # if @options.verbose
     files = get_files
     # only add APP_CONTROLLER if it isn't already included from the glob above
     files << APP_CONTROLLER unless files.include? APP_CONTROLLER
     files.each do |f|
-      class_name = extract_class_name(f)
+      class_name = extract_class_name(f).gsub("App::Controllers::","").gsub(/\AControllers::/,"")
       # ApplicationController's file is 'application.rb' in Rails < 2.3
       class_name += 'Controller' if class_name == 'Application'
       begin
@@ -38,10 +38,17 @@ class ControllersDiagram < AppDiagram
   end # generate
 
   def get_files(prefix ='')
-    files = !@options.specify.empty? ? Dir.glob(@options.specify) : Dir.glob(prefix << "app/controllers/**/*_controller.rb")
+    if !@options.specify.empty?
+      files = Dir.glob(@options.specify)
+    else
+      files  = Dir.glob(prefix << "app/controllers/**/*_controller.rb")
+      files += Dir.glob("components/*/app/controllers/**/*_controller.rb")
+      files += Dir.glob("auth/app/controllers/**/*_controller.rb")
+    end
     files -= Dir.glob(@options.exclude)
     files
   end
+
 
   private
   # Load controller classes
@@ -62,7 +69,7 @@ class ControllersDiagram < AppDiagram
   # Proccess a controller class
   def process_class(current_class)
 
-    STDERR.print "\tProcessing #{current_class}\n" if @options.verbose
+    STDERR.print "\tProcessing #{current_class}\n"# if @options.verbose
 
     if @options.brief
       @graph.add_node ['controller-brief', current_class.name]

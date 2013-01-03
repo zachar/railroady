@@ -14,7 +14,7 @@ require 'rbconfig'
 module RailRoady
   class RakeHelpers
     def self.format
-      @@DIAGRAM_FORMAT ||= 'svg'
+      @@DIAGRAM_FORMAT ||= 'dot'
     end
 
     # Returns an absolute path for the following file.
@@ -82,7 +82,19 @@ namespace :diagram do
 
   end
 
+  desc 'Exports diagrams from .dot to .png'
+  task :to_png do
+    Dir.glob("doc/*.dot").each do |filename|
+      filename = filename.gsub(/\Adoc\//,"").gsub(/\.dot/,'')
+      puts "exporting #{filename} to png"
+      sh "dot -Tpng doc/#{filename}.dot > doc/#{DateTime.now.strftime('%Y-%m-%d_%H:%m')}_#{filename}.png"
+    end
+  end
+
   desc 'Generates all class diagrams.'
   task :all => ['diagram:models:complete', 'diagram:models:brief', 'diagram:controllers:complete', 'diagram:controllers:brief']
+
+  desc 'Generates all class diagrams with png.'
+  task :all_with_png => ['diagram:models:complete', 'diagram:models:brief', 'diagram:controllers:complete', 'diagram:controllers:brief', 'diagram:to_png']
 
 end
